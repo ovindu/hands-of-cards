@@ -1,0 +1,31 @@
+// Fonts
+@import url('https://fonts.googleapis.com/css?family=Nunito');
+
+// Variables
+@import 'variables';
+
+// Bootstrap
+@import '~bootstrap/scss/bootstrap';
+
+body,
+.v-application--wrap{
+    background-color: #8d8d8d;
+}
+
+#score h2{
+    font-size: 48px;
+}
+
+.v-card {
+    padding: 0;
+    border: none;
+    .v-card__title{
+        font-weight: 600;
+        font-size: 24px;
+        display: block;
+    }
+}
+
+.theme--light.v-messages{
+    color: #f00!important;
+}
