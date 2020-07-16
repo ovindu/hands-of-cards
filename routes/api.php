@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Route;
 //    return $request->user();
 //});
 Route::middleware('api')->group(function () {
-   Route::get('/scores', 'ScoreController@index');
-   Route::post('/scores', 'ScoreController@save');
+    Route::post('/input/validate', 'ScoreController@getValidate');
+    Route::post('/input/generate', 'ScoreController@getAndSaveCards');
+    Route::get('/scores', 'ScoreController@index');
+//    Route::post('/scores', 'ScoreController@save');
 });

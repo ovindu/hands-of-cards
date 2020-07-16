@@ -2030,51 +2030,9 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
-//
 /* harmony default export */ __webpack_exports__["default"] = ({
   data: function data() {
     return {
-      cards: [{
-        card: "2",
-        value: 2
-      }, {
-        card: "3",
-        value: 3
-      }, {
-        card: "4",
-        value: 4
-      }, {
-        card: "5",
-        value: 5
-      }, {
-        card: "6",
-        value: 6
-      }, {
-        card: "7",
-        value: 7
-      }, {
-        card: "8",
-        value: 8
-      }, {
-        card: "9",
-        value: 9
-      }, {
-        card: "10",
-        value: 10
-      }, {
-        card: "J",
-        value: 11
-      }, {
-        card: "Q",
-        value: 12
-      }, {
-        card: "K",
-        value: 13
-      }, {
-        card: "A",
-        value: 14
-      }],
-      // cards default keys and values
       userCards: "",
       systemCards: "",
       system: 0,
@@ -2082,7 +2040,7 @@ __webpack_require__.r(__webpack_exports__);
       scores: [],
       message: "",
       valid: false,
-      enable: true,
+      enable: false,
       answer: false,
       name: '',
       nameRules: [function (v) {
@@ -2091,9 +2049,8 @@ __webpack_require__.r(__webpack_exports__);
         return v.length <= 24 || 'Name must be less than 24 characters';
       }],
       card: '',
-      cardRules: [function (v) {
-        return !!v || 'Card is required';
-      }],
+      cardRules: [// v => !!v || 'Card is required',
+      ],
       inputArrayValues: []
     };
   },
@@ -2112,113 +2069,61 @@ __webpack_require__.r(__webpack_exports__);
       });
     },
     setCard: function setCard(e) {
-      var escapeKeys = ["BACKSPACE", "DELETE"];
       var inputKey = e.key.toString().toUpperCase(); // get keyboard input key value
 
       var inputValue = e.target.value.toString().toUpperCase(); // get input value
 
-      this.enable = !this.name || !this.card; // escape backspace and delete key inputs and set user card null
-
-      if (!escapeKeys.includes(inputKey)) {
-        // condition to determine if user tries to enter 10
-        if (inputKey !== "1") {
-          if (inputKey === "0" && inputValue.includes((inputValue.indexOf(inputKey) - 1).toString())) {
-            // pass 10 as key value if user enter value 1 and 0 respectively
-            this.validateInput("10", inputValue);
-          } else {
-            this.validateInput(inputKey, inputValue);
-          }
-        }
+      if (inputKey === 'ENTER') {
+        this.getScores();
       } else {
-        // set input field and array empty
-        this.inputArrayValues = [];
-        this.card = '';
+        this.getValidation(inputKey, inputValue);
       }
     },
-    validateInput: function validateInput(inputKey) {
-      // validate if the entered input key or value exists in the default cards array
-      if (!this.cards.some(function (card) {
-        return card.card === inputKey;
-      })) {
-        // set validations
-        this.cardRules = ["Invalid input"];
-        this.enable = true;
-      } else {
-        // remove validations
-        this.cardRules = [];
-        this.enable = false;
-        this.inputArrayValues.push(inputKey); // create an array of user entered cards
-
-        this.card = this.inputArrayValues.join(" "); // modify the input field values with spaces
-      }
-    },
-    calculateScores: function calculateScores() {
+    // validation api on each card entered by the user
+    getValidation: function getValidation(inputKey, inputValue) {
       var _this2 = this;
 
-      var systemScore = 0;
-      var userScore = 0; // calculate each one score by comparing the values
-
-      this.inputArrayValues.forEach(function (_userCard, index) {
-        var userCardValue = _this2.getCardValue(_userCard);
-
-        var systemCardValue = _this2.systemCards[index].value;
-
-        if (systemCardValue < userCardValue) {
-          userScore += 1;
-        } else if (systemCardValue > userCardValue) {
-          systemScore += 1;
+      axios.post('api/input/validate', {
+        key: inputKey,
+        input_value: inputValue
+      }).then(function (res) {
+        if (res.data.error) {
+          _this2.cardRules = ["Invalid input"];
         } else {
-          return false;
+          _this2.card = res.data.data;
+          _this2.cardRules = [];
         }
-      });
-      this.user = userScore;
-      this.system = systemScore;
-    },
-    getCardValue: function getCardValue(userCard) {
-      // return the value of given card key
-      return this.cards.filter(function (_card) {
-        return _card.card === userCard;
-      })[0].value;
-    },
-    generateCard: function generateCard(length) {
-      // generate random cards, first set random index to the default array then sort the array and return the array values with new sorted indexes
-      return this.cards.map(function (a) {
-        return {
-          sort: Math.random(),
-          value: a
-        };
-      }).sort(function (a, b) {
-        return a.sort - b.sort;
-      }).map(function (a) {
-        return a.value;
-      }).slice(0, length);
-    },
-    getScores: function getScores() {
-      this.userCards = this.card;
-      this.systemCards = this.generateCard(this.inputArrayValues.length); // call to generate random cards which has a length of user entered cards
 
-      this.answer = true;
-      this.calculateScores();
-      this.saveScores();
-      this.getScoresTable();
+        _this2.message = '';
+      })["catch"](function (err) {
+        console.log("ERR", err);
+      });
     },
-    saveScores: function saveScores() {
+    // api call to get scores of the each play
+    getScores: function getScores() {
       var _this3 = this;
 
-      //show alert message
-      this.message = this.user > this.system ? "<span class=\"green--text\">You Won!</span>" : "<span class=\"red--text\">Hard Luck, Try Again!</span>"; // api call to save game score
+      axios.post('api/input/generate', {
+        name: this.name
+      }).then(function (res) {
+        if (!res.data.error) {
+          _this3.user = res.data.data.player;
+          _this3.system = res.data.data.system;
+          _this3.userCards = res.data.data.hands.player;
+          _this3.systemCards = res.data.data.hands.system;
+          _this3.answer = true;
+          _this3.message = res.data.data.status ? "<span class=\"green--text\">You Won!</span>" : "<span class=\"red--text\">Hard Luck, Try Again!</span>";
 
-      axios.post('api/scores', {
-        name: this.name,
-        user_score: this.user,
-        system_score: this.system,
-        status: this.user > this.system
-      }).then(function () {
+          _this3.getScoresTable();
+        }
+
         setTimeout(function () {
           _this3.message = "";
         }, 5000);
       })["catch"](function (err) {
-        return console.log("ERR", err);
+        if (!!err.response.data.errors && !!err.response.data.errors.name) {
+          _this3.message = "<span class=\"red--text\">Please enter your name!</span>";
+        }
       });
     }
   }
@@ -38551,22 +38456,13 @@ var render = function() {
                                           _c(
                                             "td",
                                             { staticClass: "text-left" },
-                                            _vm._l(_vm.systemCards, function(
-                                              systemCard,
-                                              index
-                                            ) {
-                                              return _c(
-                                                "span",
-                                                { key: index },
-                                                [
-                                                  _vm._v(
-                                                    _vm._s(systemCard.card) +
-                                                      " "
-                                                  )
-                                                ]
+                                            [
+                                              _vm._v(
+                                                "\n                                            " +
+                                                  _vm._s(_vm.systemCards) +
+                                                  "\n                                        "
                                               )
-                                            }),
-                                            0
+                                            ]
                                           )
                                         ])
                                       ]
@@ -94888,8 +94784,8 @@ var opts = {};
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! D:\PROGRAMMING\WEB\hands-of-cards\resources\js\app.js */"./resources/js/app.js");
-module.exports = __webpack_require__(/*! D:\PROGRAMMING\WEB\hands-of-cards\resources\sass\app.scss */"./resources/sass/app.scss");
+__webpack_require__(/*! D:\PROGRAMMING\WEB\hand-of-cards\resources\js\app.js */"./resources/js/app.js");
+module.exports = __webpack_require__(/*! D:\PROGRAMMING\WEB\hand-of-cards\resources\sass\app.scss */"./resources/sass/app.scss");
 
 
 /***/ })
